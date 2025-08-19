@@ -1,0 +1,96 @@
+import faiss
+from langchain_core.documents import Document
+from langchain_text_splitters import RecursiveCharacterTextSplitter
+from langchain_huggingface import HuggingFaceEmbeddings
+from langchain_community.docstore.in_memory import InMemoryDocstore
+from langchain_community.vectorstores import FAISS
+from data_processing.loader import Loader, PdfFiles
+
+
+
+class Documents:
+
+    def __init__(self, chunk_size=1000, chunk_overlap=200):
+        self.chunk_size = chunk_size
+        self.chunk_overlap = chunk_overlap
+        self.prepare()
+
+    def prepare(self):
+        docs = []
+        for path in PdfFiles.pdfs:
+            line_start_idx = 0
+            ld = Loader(path)
+            doc = ld.start_from_line(line_start_idx)
+            filename = ld.filename
+            docs.append([filename, doc])
+        self.docs = docs
+
+    # def prepare(self):
+    #     docs = []
+    #     for _, metadata in self.document_load_metadata.items():
+    #         path = metadata.get('path')
+    #         line_start_idx = metadata.get('line_start_idx')
+    #         ld = Loader(path)
+    #         doc = ld.start_from_line(line_start_idx)
+    #         filename = ld.filename
+    #         docs.append([filename, doc])
+    #     self.docs = docs
+
+    def prepare_splitted_document_chunks(self):
+        documents = [Document(page_content = document, metadata={"source": filename}) for filename, document in self.docs]
+        text_splitter = RecursiveCharacterTextSplitter(
+            chunk_size=self.chunk_size, chunk_overlap=self.chunk_overlap,
+            separators=["\n\n", "\n", ". ", "? ", "! ", " "],
+            add_start_index=True
+        )
+        all_splits = text_splitter.split_documents(documents)
+        self.chunked_docs = all_splits
+
+    def prepare_splitted_document_chunks_pagewise(self):
+        documents = [[filename, document.split("||PAGE_BREAK||")] for filename, document in self.docs]
+        vec_documents = []
+        for filename, pages in documents:
+            for page_no, page in enumerate(pages, start=1):
+                doc = Document(page_content = page, metadata={"source": filename,
+                                                              "page_number": page_no})
+                vec_documents.append(doc)
+        self.chunked_docs = vec_documents
+
+
+class VectorStore:
+
+    def __init__(self, huggingface_embedding_model="sentence-transformers/all-mpnet-base-v2",
+                 vector_store_loc='./vector_store'):
+        self.huggingface_embedding_model = huggingface_embedding_model
+        self.embeddings = HuggingFaceEmbeddings(model_name=self.huggingface_embedding_model)
+        self.vector_store_loc = vector_store_loc
+        # self.vector_store = None
+        self.distance = 5
+
+    def create_empty_store(self):
+        embedding_dim = len(self.embeddings.embed_query("hello world"))
+        index = faiss.IndexFlatL2(embedding_dim)
+        self.vector_store = FAISS(
+            embedding_function=self.embeddings,
+            index=index,
+            docstore=InMemoryDocstore(),
+            index_to_docstore_id={},
+        )
+
+    def add_documents(self, documents:Documents):
+        # if self.vector_store is None:
+        self.create_empty_store()
+        self.vector_store.add_documents(documents.chunked_docs)
+        self.vector_store.save_local(self.vector_store_loc)
+
+    def load(self):
+        self.vector_store = FAISS.load_local(
+            self.vector_store_loc,
+            self.embeddings,
+            allow_dangerous_deserialization=True
+        )
+
+    def similarity_search(self, query):
+        results = self.vector_store.similarity_search_with_score(query)
+        results = [doc.page_content for doc, score in results if score <= self.distance]
+        return results
