@@ -7,7 +7,7 @@ class LLM:
 
     def __init__(self, model_name:str, GROQ_API_KEY:str, system_prompt:str,
                  vector_store:VectorStore=None, history_tracking=False):
-        self.model_name = model_name    # "llama-3.3-70b-versatile"
+        self.model_name = model_name
         self.__vector_store = vector_store
         self.system_prompt = system_prompt
         self.history_tracking = history_tracking
@@ -27,7 +27,7 @@ class LLM:
         self.first_system_prompt = system_prompt
 
         system_prompt += f"Today's date: {today_date}\nUse the following context to answer queries:\n{context}" if self.__vector_store else ""
-        # print(system_prompt)
+
         messages = [{"role": "system", "content": system_prompt}]
         messages.append({"role": "user", "content": f"chat history: {formatted_chat_history}\n\nuser input: {user_input}"})
         return messages
@@ -53,7 +53,6 @@ class LLM:
         }
         response = requests.post(url, headers=headers, json=payload)
         output = response.json()['choices'][0]['message']['content'].strip()
-        # output = 'test'
         self.first_call = False
         if self.history_tracking:
             self.chat_history.append(f"query: {self.first_system_prompt}{user_input}\nresponse: {output}")

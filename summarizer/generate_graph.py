@@ -1,10 +1,9 @@
+import argparse
 import asyncio
 import os
-import argparse
 from graph.prepare import Graph
-
-from dotenv import load_dotenv
-load_dotenv()
+# from dotenv import load_dotenv
+# load_dotenv()
 
 
 parser = argparse.ArgumentParser(
@@ -29,14 +28,12 @@ async def main():
     password = os.getenv("NEO4J_PASSWORD")
     api = os.getenv("GROQ_API_KEY")
 
-    # "openai/gpt-oss-20b"
     gph = Graph(url, username, password, api,
                 args.allowed_nodes, args.allowed_relationships,
                 "llama-3.3-70b-versatile", 'groq')
 
     await gph.prepare_graph(split_pagewise=args.page_wise)
     gph.get_id_label_mapping(save=True)
-    # gph.get_relationships(save=True)
 
 
 if __name__ == "__main__":

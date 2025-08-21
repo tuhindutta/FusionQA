@@ -1,9 +1,8 @@
 from fastapi import FastAPI
-from pydantic import BaseModel
 import os
+from pydantic import BaseModel
 import subprocess
 from llm.embedding import VectorStore
-from llm.vector_llm import VectorLlm
 from llm.hybrid_llm import HybridLlm
 
 
@@ -33,16 +32,20 @@ vs.load()
 app = FastAPI(title="RAG API", description="Vector & Hybrid RAG API")
 
 
-llm_vector = VectorLlm(QUERY_MODEL, QUERY_MODEL_API_KEY, vs, history_tracking=False)
+# llm_vector = VectorLlm(QUERY_MODEL, QUERY_MODEL_API_KEY, vs, history_tracking=False)
 
 llm_hybrid = HybridLlm(CYPHER_MODEL, CYPHER_MODEL_API_KEY, QUERY_MODEL, QUERY_MODEL_API_KEY,
-                       vs, NEO4J_URI, NEO4J_USERNAME, NEO4J_PASSWORD,
+                       vs, NEO4J_URI, NEO4J_USERNAME, NEO4J_PASSWORD, None,
                        CYPHER_MODEL_API, QUERY_MODEL_API,
                        history_tracking=False)
 
+class SystemRole(BaseModel):
+    prompt: str
+
 class QueryRequest(BaseModel):
     query: str
-    hybrid: bool = False
+    use_vector: bool = True
+    use_graph: bool = False
 
 class GraphIncludeTypes(BaseModel):
     include_types: list = []
@@ -51,13 +54,37 @@ class GraphAllowedNodesRels(BaseModel):
     allowed_nodes: list = []
     allowed_relationships: list = []
 
+@app.post("/set-system-role")
+def generate_graph_pagewise(request: SystemRole):
+    try:
+        llm_hybrid.system_role_prompt = request.prompt
+        llm_hybrid.get_llms()
+        return {"status": "success", "message": "System role set"}
+    except subprocess.CalledProcessError as e:
+        return {"status": "error", "message": str(e)}
+
 @app.post("/query")
 def query_rag(request: QueryRequest):
     """Run a RAG query using Vector or Hybrid mode."""
-    llm = llm_hybrid if request.hybrid else llm_vector
+    if not llm_hybrid.llms_loaded:
+        llm_hybrid.get_llms() 
+    if request.use_vector and request.use_graph:
+        llm = llm_hybrid
+        llm_type = "hybrid"
+        system_role = llm.system_role_prompt
+    elif request.use_vector:
+        llm = llm_hybrid.vector_llm
+        llm_type = "vector"
+        system_role = llm.system_role_prompt
+    elif request.use_graph:
+        llm = llm_hybrid.graph_llm
+        llm_type = "graph"
+        system_role = None
     query = request.query
     response = llm.query_llm(query)
     return {
+        "system_role": system_role,
+        "llm_type": llm_type,
         "query": query,
         "response": response
     }

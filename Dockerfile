@@ -5,8 +5,7 @@ WORKDIR /app
 COPY requirements.txt .
 
 RUN python -m pip install --upgrade pip && \
-    python -m pip install --no-cache-dir -r requirements.txt && \
-    python -m spacy download en_core_web_md
+    python -m pip install --no-cache-dir -r requirements.txt
 
 COPY summarizer/ ./summarizer
 

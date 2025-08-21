@@ -3,18 +3,14 @@ from langchain_neo4j import Neo4jGraph
 from langchain_groq import ChatGroq
 from langchain_openai import ChatOpenAI
 from langchain_deepseek import ChatDeepSeek
+from neo4j import GraphDatabase
 from tqdm import tqdm
 from llm.embedding import Documents
-from data_processing.loader import json_dumper
 from graph.token_match import TokenMatch
-from neo4j import GraphDatabase
-
-
 
 
 class Graph:
     graph_id_label_map_file = "./graph_id_label_map.json"
-    # relationship_file = "./relationship.json"
 
     def __init__(self, url, username, password, api_key,
                  allowed_nodes:list=None, allowed_relationships:list=None,
@@ -55,7 +51,6 @@ class Graph:
         for document in tqdm(doc.chunked_docs):
             filename = document.metadata.get('source')
             document.page_content = self.combine_filename_document(filename, document.page_content)
-            # print(document.page_content)
         graph_doc = await self.llm_transformer.aconvert_to_graph_documents(doc.chunked_docs)
         self.graph.add_graph_documents(graph_doc)
         self.graph_documents.append(graph_doc)
@@ -99,18 +94,3 @@ class Graph:
         relationships = '\n'.join(relationships)        
         return relationships.strip()
     
-
-        # if save:
-        #     json_dumper(self.id_label_mapping, self.graph_id_label_map_file)
-
-    # def get_relationships(self, save=False):
-    #     query = """
-    #     MATCH ()-[r]->()
-    #     RETURN DISTINCT type(r) AS relationship
-    #     """
-    #     results = self.graph.query(query)
-    #     relationships = [record["relationship"] for record in results]
-    #     self.relationships = relationships
-    #     if save:
-    #         json_dumper(self.relationships, self.relationship_file)
-

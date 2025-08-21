@@ -25,17 +25,6 @@ class Documents:
             docs.append([filename, doc])
         self.docs = docs
 
-    # def prepare(self):
-    #     docs = []
-    #     for _, metadata in self.document_load_metadata.items():
-    #         path = metadata.get('path')
-    #         line_start_idx = metadata.get('line_start_idx')
-    #         ld = Loader(path)
-    #         doc = ld.start_from_line(line_start_idx)
-    #         filename = ld.filename
-    #         docs.append([filename, doc])
-    #     self.docs = docs
-
     def prepare_splitted_document_chunks(self):
         documents = [Document(page_content = document, metadata={"source": filename}) for filename, document in self.docs]
         text_splitter = RecursiveCharacterTextSplitter(
@@ -64,7 +53,6 @@ class VectorStore:
         self.huggingface_embedding_model = huggingface_embedding_model
         self.embeddings = HuggingFaceEmbeddings(model_name=self.huggingface_embedding_model)
         self.vector_store_loc = vector_store_loc
-        # self.vector_store = None
         self.distance = 5
 
     def create_empty_store(self):
@@ -78,7 +66,6 @@ class VectorStore:
         )
 
     def add_documents(self, documents:Documents):
-        # if self.vector_store is None:
         self.create_empty_store()
         self.vector_store.add_documents(documents.chunked_docs)
         self.vector_store.save_local(self.vector_store_loc)

@@ -1,9 +1,9 @@
 from langchain_neo4j import GraphCypherQAChain
-from graph.prepare import Graph
 from langchain.prompts import PromptTemplate
 from langchain_groq import ChatGroq
 from langchain_openai import ChatOpenAI
 from langchain_deepseek import ChatDeepSeek
+from graph.prepare import Graph
 
 
 CYPHER_PROMPT = """
@@ -27,23 +27,6 @@ Now, based on the above node mappings and relationships schema, generate the cor
 """
 
 
-# def rename_ids(query: str, mappings: dict) -> str:
-#     modified_query = query
-
-#     for key, value in mappings.items():
-#         # Escape special regex chars in key
-#         key_pattern = re.escape(key)
-
-#         # Replace whole word matches (case insensitive)
-#         modified_query = re.sub(
-#             rf"\b{key_pattern}\b",  # word boundary
-#             value,
-#             modified_query,
-#             flags=re.IGNORECASE
-#         )
-#     return modified_query
-
-
 class GraphLlm(Graph):
 
     def __init__(self, cypher_model_name:str, cypher_model_api_key:str, query_model_name:str, query_model_api_key:str,
@@ -53,7 +36,7 @@ class GraphLlm(Graph):
                         cypher_model_name, cypher_model_api)
         self.include_types = ((allowed_nodes or []) + (allowed_relationships or [])) or []
         llms = {"openai": ChatOpenAI, "groq": ChatGroq, "deepseek": ChatDeepSeek}
-        self.query_llm = llms.get(query_model_api)(
+        self.QAllm = llms.get(query_model_api)(
             api_key=query_model_api_key,
             model_name=query_model_name,
             temperature=0.3
@@ -64,7 +47,7 @@ class GraphLlm(Graph):
         self.chain = GraphCypherQAChain.from_llm(
             graph=self.graph,
             cypher_llm=self.llm,
-            qa_llm=self.query_llm,
+            qa_llm=self.QAllm,
             include_types=self.include_types,
             validate_cypher=True,
             top_k=100,
@@ -73,10 +56,9 @@ class GraphLlm(Graph):
             cypher_prompt=PromptTemplate.from_template(CYPHER_PROMPT)
         )
 
-    def query(self, query:str):
+    def query_llm(self, query:str):
         mappings = self.get_id_label_mapping(query)
         relationships = self.get_relationships()
         prompt = {"node_mappings":mappings, "relationships":relationships, "query": query}
-        print(prompt)
         res = self.chain.invoke(prompt)
         return res
