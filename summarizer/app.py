@@ -64,6 +64,12 @@ class GraphAllowedNodesRels(BaseModel):
     allowed_nodes: list = []
     allowed_relationships: list = []
 
+class PageWiseGraphAllowedNodesRels(BaseModel):
+    chunk_size: int = 1000
+    chunk_overlap: int = 2000
+    allowed_nodes: list = []
+    allowed_relationships: list = []
+
 @app.post("/set-system-role")
 def set_system_role(request: SystemRole):
     try:
@@ -128,9 +134,13 @@ def generate_vector_pagewise():
         return {"status": "error", "message": str(e)}
     
 @app.post("/graph/extract")
-def generate_graph(request: GraphAllowedNodesRels):
+def generate_graph(request: PageWiseGraphAllowedNodesRels):
     try:
-        args = ["python", "generate_graph.py"]
+        chunk_size = str(request.chunk_size)
+        chunk_overlap = str(request.chunk_overlap)
+
+        args = ["python", "generate_graph.py", "--chunk-size", chunk_size,
+                "--chunk-overlap", chunk_overlap]
 
         nodes = request.allowed_nodes
         rels = request.allowed_relationships

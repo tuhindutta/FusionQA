@@ -17,6 +17,10 @@ parser.add_argument("--allowed_nodes", nargs='+', default=[],
                     help="Allowed nodes")
 parser.add_argument("--allowed_relationships", nargs='+', default=[],
                     help="Allowed relationships")
+parser.add_argument("--chunk-size", type=int, default=1000,
+                    help="Chunk size for splitting text.")
+parser.add_argument("--chunk-overlap", type=int, default=200,
+                    help="Chunk overlap size.",)
 
 
 args = parser.parse_args()
@@ -32,8 +36,7 @@ async def main():
                 args.allowed_nodes, args.allowed_relationships,
                 "llama-3.3-70b-versatile", 'groq')
 
-    await gph.prepare_graph(split_pagewise=args.page_wise)
-    gph.get_id_label_mapping(save=True)
+    await gph.prepare_graph(args.page_wise, args.chunk_size, args.chunk_overlap)
 
 
 if __name__ == "__main__":

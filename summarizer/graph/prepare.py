@@ -41,9 +41,10 @@ class Graph:
         txt = f"The complete following document is for *Title: {filename}*\n{document}"
         return txt
 
-    async def prepare_graph(self, split_pagewise=False):
+    async def prepare_graph(self, split_pagewise=False,
+                            chunk_size:int=1000, chunk_overlap:int=200):
         self.graph_documents = []
-        doc = Documents()
+        doc = Documents(chunk_size, chunk_overlap)
         if split_pagewise:
             doc.prepare_splitted_document_chunks_pagewise()
         else:
@@ -75,7 +76,14 @@ class Graph:
 
     def get_id_label_mapping(self, text:str):
         id_label_mapping = self.get_id_label_mapping_from_db()
-        mapping = {i.get('id').strip():[label.strip() for label in i.get('labels')] for i in id_label_mapping}
+        mapping = {}
+        for i in id_label_mapping:
+            ids = i.get('id')
+            labels = i.get('labels')
+            if ids not in mapping:
+                mapping[ids] = [label.strip() for label in labels]
+            else:
+                mapping[ids] += [label.strip() for label in labels]
         if len(self.allowed_nodes) > 0:
             mapping = {i:j for i,j in mapping.items() if any([node in j for node in self.allowed_nodes])}
         nodes_required = self.em.extract(text, list(mapping.keys()))
@@ -84,7 +92,7 @@ class Graph:
         mappings_edited = ""
         for key, value in mapping.items():
             for val in value:
-                mappings_edited += f'{key} → ({val} {{name: "{key}"}})\n'
+                mappings_edited += f'{key.strip()} → ({val.strip()} {{name: "{key.strip()}"}})\n'
         mappings_edited = mappings_edited.strip()
         return mappings_edited
     
