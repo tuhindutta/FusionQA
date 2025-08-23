@@ -66,7 +66,7 @@ class GraphAllowedNodesRels(BaseModel):
 
 class PageWiseGraphAllowedNodesRels(BaseModel):
     chunk_size: int = 1000
-    chunk_overlap: int = 2000
+    chunk_overlap: int = 200
     allowed_nodes: list = []
     allowed_relationships: list = []
 
