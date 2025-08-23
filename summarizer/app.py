@@ -29,10 +29,23 @@ for var_name, value in {
 vs = VectorStore()
 vs.load()
 
-app = FastAPI(title="RAG API", description="Vector & Hybrid RAG API")
+app = FastAPI(
+    title="📘 RAG API",
+    description="""
+A **Retrieval-Augmented Generation (RAG) API** for:
+- 📂 Document ingestion  
+- 🔍 Vector & hybrid search (dense + keyword)  
+- 🤖 Query answering with LLM integration  
 
+### Features
+- Upload & manage documents
+- Perform similarity or hybrid searches
+- Query responses powered by LLM
+- API-ready vector database
 
-# llm_vector = VectorLlm(QUERY_MODEL, QUERY_MODEL_API_KEY, vs, history_tracking=False)
+> Use the `/docs` endpoint for interactive Swagger UI or `/redoc` for alternative documentation.
+"""
+)
 
 llm_hybrid = HybridLlm(CYPHER_MODEL, CYPHER_MODEL_API_KEY, QUERY_MODEL, QUERY_MODEL_API_KEY,
                        vs, NEO4J_URI, NEO4J_USERNAME, NEO4J_PASSWORD, None,
@@ -47,19 +60,24 @@ class QueryRequest(BaseModel):
     use_vector: bool = True
     use_graph: bool = False
 
-class GraphIncludeTypes(BaseModel):
-    include_types: list = []
-
 class GraphAllowedNodesRels(BaseModel):
     allowed_nodes: list = []
     allowed_relationships: list = []
 
 @app.post("/set-system-role")
-def generate_graph_pagewise(request: SystemRole):
+def set_system_role(request: SystemRole):
     try:
         llm_hybrid.system_role_prompt = request.prompt
         llm_hybrid.get_llms()
         return {"status": "success", "message": "System role set"}
+    except subprocess.CalledProcessError as e:
+        return {"status": "error", "message": str(e)}
+    
+@app.post("/refresh-vector-db")
+def refresh_vector_db():
+    try:
+        vs.load()
+        return {"status": "success", "message": "Vector DB refreshed"}
     except subprocess.CalledProcessError as e:
         return {"status": "error", "message": str(e)}
 
@@ -85,6 +103,7 @@ def query_rag(request: QueryRequest):
     return {
         "system_role": system_role,
         "llm_type": llm_type,
+        "using_sample_vector": vs.using_sample_vector,
         "query": query,
         "response": response
     }
@@ -154,9 +173,11 @@ def generate_graph_pagewise(request: GraphAllowedNodesRels):
 
     
 @app.post("/graph/set-include-types")
-def generate_graph_pagewise(request: GraphIncludeTypes):
+def set_include_types(request: GraphAllowedNodesRels):
     try:
-        llm_hybrid.include_types = request.include_types
+        llm_hybrid.allowed_nodes = request.allowed_nodes
+        llm_hybrid.allowed_relationships = request.allowed_relationships
         llm_hybrid.get_llms()
+        return {"status": "success", "message": "Graph include types set"}
     except subprocess.CalledProcessError as e:
         return {"status": "error", "message": str(e)}

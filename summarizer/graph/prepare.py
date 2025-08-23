@@ -75,11 +75,12 @@ class Graph:
 
     def get_id_label_mapping(self, text:str):
         id_label_mapping = self.get_id_label_mapping_from_db()
-        mapping = {i.get('id'):i.get('labels') for i in id_label_mapping}
+        mapping = {i.get('id').strip():[label.strip() for label in i.get('labels')] for i in id_label_mapping}
         if len(self.allowed_nodes) > 0:
             mapping = {i:j for i,j in mapping.items() if any([node in j for node in self.allowed_nodes])}
         nodes_required = self.em.extract(text, list(mapping.keys()))
-        mapping = {i:j for i,j in mapping.items() if i in nodes_required}
+        nodes_required = [i.lower().strip() for i in nodes_required]
+        mapping = {i:j for i,j in mapping.items() if i.lower() in nodes_required}
         mappings_edited = ""
         for key, value in mapping.items():
             for val in value:
@@ -90,7 +91,9 @@ class Graph:
     def get_relationships(self):
         relationships = [f"(:{rel['start']})-[:{rel['type']}]->(:{rel['end']})" for rel in self.graph.get_structured_schema['relationships']]
         if len(self.allowed_nodes) > 0:
-            relationships = [i for i in relationships if any([node in i for node in self.allowed_nodes])]
+            relationships = [i for i in relationships if any([node.strip() in i.strip() for node in self.allowed_nodes])]
+        if len(self.allowed_relationships) > 0:
+            relationships = [i for i in relationships if any([rel.strip() in i.strip() for rel in self.allowed_relationships])]
         relationships = '\n'.join(relationships)        
         return relationships.strip()
     

@@ -43,9 +43,10 @@ class HybridLlm:
         self.llms_loaded = True
 
     def query_llm(self, query:str):
-        graph_response = self.graph_llm.query_llm(query).get('result')
-        prompt = f"""Knowledge Graph Context: {graph_response}
+        graph_response = self.graph_llm.query_llm(query)
+        graph_context = graph_response.get('result')
+        prompt = f"""Knowledge Graph Context: {graph_context}
 Use the above KG context also for the query:\n{query}"""
-        response = {"graph_context": graph_response,
+        response = {"graph_response": graph_response,
                     "response": self.vector_llm.query_llm(prompt)}
         return response

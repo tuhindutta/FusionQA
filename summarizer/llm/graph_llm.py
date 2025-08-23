@@ -32,7 +32,8 @@ class GraphLlm(Graph):
     def __init__(self, cypher_model_name:str, cypher_model_api_key:str, query_model_name:str, query_model_api_key:str,
                  url, username, password, cypher_model_api:str, query_model_api:str, 
                  allowed_nodes:list=None, allowed_relationships:list=None):
-        super().__init__(url, username, password, cypher_model_api_key, allowed_nodes, allowed_relationships,
+        super().__init__(url, username, password, cypher_model_api_key,
+                         allowed_nodes, allowed_relationships,
                         cypher_model_name, cypher_model_api)
         self.include_types = ((allowed_nodes or []) + (allowed_relationships or [])) or []
         llms = {"openai": ChatOpenAI, "groq": ChatGroq, "deepseek": ChatDeepSeek}
@@ -59,6 +60,8 @@ class GraphLlm(Graph):
     def query_llm(self, query:str):
         mappings = self.get_id_label_mapping(query)
         relationships = self.get_relationships()
-        prompt = {"node_mappings":mappings, "relationships":relationships, "query": query}
+        prompt = {"allowed_nodes":self.allowed_nodes, "node_mappings":mappings,
+                  "allowed_relationships":self.allowed_relationships,
+                  "relationships":relationships, "query": query}
         res = self.chain.invoke(prompt)
         return res

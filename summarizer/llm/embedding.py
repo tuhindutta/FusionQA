@@ -1,4 +1,5 @@
 import faiss
+import os
 from langchain_core.documents import Document
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_huggingface import HuggingFaceEmbeddings
@@ -46,14 +47,21 @@ class Documents:
         self.chunked_docs = vec_documents
 
 
+    
 class VectorStore:
 
-    def __init__(self, huggingface_embedding_model="sentence-transformers/all-mpnet-base-v2",
-                 vector_store_loc='./vector_store'):
+    def __init__(self, huggingface_embedding_model="sentence-transformers/all-mpnet-base-v2"):
         self.huggingface_embedding_model = huggingface_embedding_model
         self.embeddings = HuggingFaceEmbeddings(model_name=self.huggingface_embedding_model)
-        self.vector_store_loc = vector_store_loc
         self.distance = 5
+
+    @property
+    def vector_store_loc(self):
+        if len(os.listdir('./vector_db')) > 0:
+            loc = './vector_db'
+        else:
+            loc = './vector_store'
+        return loc
 
     def create_empty_store(self):
         embedding_dim = len(self.embeddings.embed_query("hello world"))
@@ -68,14 +76,16 @@ class VectorStore:
     def add_documents(self, documents:Documents):
         self.create_empty_store()
         self.vector_store.add_documents(documents.chunked_docs)
-        self.vector_store.save_local(self.vector_store_loc)
+        self.vector_store.save_local('./vector_db')
 
     def load(self):
+        loading_from = self.vector_store_loc
         self.vector_store = FAISS.load_local(
-            self.vector_store_loc,
+            loading_from,
             self.embeddings,
             allow_dangerous_deserialization=True
         )
+        self.using_sample_vector = loading_from == './vector_store'
 
     def similarity_search(self, query):
         results = self.vector_store.similarity_search_with_score(query)
