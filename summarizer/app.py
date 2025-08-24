@@ -30,18 +30,17 @@ vs = VectorStore()
 vs.load()
 
 app = FastAPI(
-    title="📘 RAG API",
+    title="📘 Summarizer API",
     description="""
 A **Retrieval-Augmented Generation (RAG) API** for:
-- 📂 Document ingestion  
-- 🔍 Vector & hybrid search (dense + keyword)  
-- 🤖 Query answering with LLM integration  
+- 📂 Document ingestion
+- 🔍 Vector, graph & hybrid search (Vector + Graph)
+- 🤖 Query answering with LLM integration
 
 ### Features
 - Upload & manage documents
-- Perform similarity or hybrid searches
 - Query responses powered by LLM
-- API-ready vector database
+- API-ready vector and graph database
 
 > Use the `/docs` endpoint for interactive Swagger UI or `/redoc` for alternative documentation.
 """
