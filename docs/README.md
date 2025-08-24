@@ -126,70 +126,6 @@ summarizer
 
 ---
 
-## 🐳 Docker Setup
-
-### Dockerfile
-
-```dockerfile
-FROM python:3.11.13-slim
-
-WORKDIR /app
-
-COPY requirements.txt .
-
-RUN python -m pip install --upgrade pip && \
-    python -m pip install --no-cache-dir -r requirements.txt
-
-COPY summarizer/ ./summarizer
-
-WORKDIR /app/summarizer
-
-EXPOSE 8000
-
-CMD ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "8000"]
-```
-
-### Environment File
-
-Create a `.env` file in the project root:
-
-```env
-NEO4J_URI=example
-NEO4J_USERNAME=example
-NEO4J_PASSWORD=example
-GROQ_API_KEY=example
-```
-
-### Run the Container
-
-```bash
-docker run --env-file ./.env \
-  -v ${PWD}/documents:/app/summarizer/documents \
-  -v ${PWD}/vector_db:/app/summarizer/vector_db \
-  -p 8000:8000 summarizer_app
-```
-
-**Options**:
-
-* `--env-file ./.env` → Load env variables.
-* `-v ${PWD}/documents:/app/summarizer/documents` → Mount documents directory.
-* `-v ${PWD}/vector_db:/app/summarizer/vector_db` → Persist vector DB.
-* `-p 8000:8000` → API accessible at port 8000.
-
-### API Access
-
-* Swagger UI → [http://localhost:8000/docs](http://localhost:8000/docs)
-* ReDoc → [http://localhost:8000/redoc](http://localhost:8000/redoc)
-
----
-
-## 📖 API Documentation
-
-Full API reference is available separately at:
-👉 [FusionQA API Docs](https://tuhindutta.github.io/FusionQA/api_doc.html)
-
----
-
 ## ✨ Summary
 
 FusionQA is a **modular, LLM-powered, hybrid RAG framework** that:
@@ -202,3 +138,7 @@ FusionQA is a **modular, LLM-powered, hybrid RAG framework** that:
 
 This makes it suitable for domains like **finance, education, research, and knowledge management**, where combining **semantic search** with **structured graph reasoning** provides superior results.
 
+---
+
+## 🤝 Contributing
+Contributions are welcome! Please fork the repository and submit a pull request for any enhancements or bug fixes. For more details and updates, visit the [GitHub Repository](https://github.com/tuhindutta/FusionQA).
