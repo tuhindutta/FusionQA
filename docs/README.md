@@ -1,3 +1,3 @@
-# Pdf-Summarizer
+# FusionQA
 
-## 🔗 [API documentation link](https://tuhindutta.github.io/FusionQA/api_doc.html)
+## 🔗 [Summarizer API documentation link](https://tuhindutta.github.io/FusionQA/api_doc.html)
